@@ -4,6 +4,7 @@ namespace App\Domain\Invoice\Livewire;
 
 use App\Domain\Invoice\Models\Invoice;
 use App\Domain\Invoice\Models\InvoiceDetail;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -32,13 +33,14 @@ class Invoices extends Component
 
     public function add()
     {
-        $this->details[] = new InvoiceDetail;
+        $this->details[] = [];
     }
 
     public function edit(Invoice $invoice)
     {
         $this->invoice = $invoice;
-        $this->details = $invoice->invoiceDetails;
+        $this->details = $invoice->invoiceDetails->all();
+       
     
     }
     
@@ -49,19 +51,13 @@ class Invoices extends Component
    
         DB::transaction( function ()
         {
-           
-            $this->invoice->save();
-
-            foreach($this->details as $detail){
-               
-                if($detail instanceof InvoiceDetail){
-                    $detail->save();
-                }else{
-                    $this->invoice->invoiceDetails()->create($detail);
-                }
-               
+            if($this->invoice->id){
+                $this->invoice->invoiceDetails->each->delete();
             }
 
+            $this->invoice->save();
+            $this->invoice->invoiceDetails()->createMany($this->details);   
+            
             $this->invoice = new Invoice;
             $this->details = [];
 
